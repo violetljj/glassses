@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "a-vision"
+version = "1.0.0"
+description = "智能辅助视觉中枢 - 专为视障人士设计的综合辅助系统"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "A.VISION Team"}
+]
+keywords = ["assistive-technology", "computer-vision", "yolo", "esp32", "accessibility"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Healthcare Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Video :: Capture",
+]
+
+dependencies = [
+    "flask",
+    "flask-cors",
+    "ultralytics",
+    "opencv-python",
+    "requests",
+    "numpy",
+    "torch",
+    "python-dotenv",
+    "edge-tts",
+    "SpeechRecognition",
+    "pydub",
+    "Pillow",
+    "openai",
+    "dashscope",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "pytest-cov",
+]
+docs = [
+    "flask-restx",
+]
+all = [
+    "a-vision[dev,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/a-vision/glasses"
+Documentation = "https://github.com/a-vision/glasses#readme"
+Repository = "https://github.com/a-vision/glasses"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["services*"]

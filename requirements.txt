@@ -1,0 +1,22 @@
+flask
+flask-cors
+ultralytics
+opencv-python
+requests
+numpy
+torch
+python-dotenv
+edge-tts
+SpeechRecognition
+google-generativeai
+pydub
+Pillow
+openai
+dashscope
+
+# 测试 (Testing)
+pytest
+pytest-mock
+
+# API 文档 (Documentation)
+flask-restx

@@ -1,0 +1,226 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A.VISION | 辅助视觉中枢</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css?v=3">
+</head>
+
+<body>
+    <!-- Background Effects -->
+    <canvas id="canvas-bg"></canvas>
+    <div class="noise-overlay"></div>
+    <div class="grid-overlay"></div>
+    <div id="cursor-dot"></div>
+    <div id="cursor-outline"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-4 left-6 right-6 px-8 py-4 z-50 flex justify-between items-center glass-panel rounded-full">
+        <div class="text-2xl font-bold font-syne tracking-tighter text-white">
+            A.VISION <span class="text-accent text-sm tracking-widest opacity-80 font-normal ml-2">BETA</span>
+        </div>
+        <div class="flex gap-6 text-[11px] uppercase tracking-widest font-medium opacity-90">
+            <span class="hover:text-accent transition-colors cursor-pointer">System</span>
+            <span class="hover:text-accent transition-colors cursor-pointer">Network</span>
+            <span class="text-accent cursor-pointer">Camera</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main
+        class="min-h-screen pt-24 pb-6 px-6 md:px-12 lg:px-20 max-w-[1920px] mx-auto grid grid-cols-1 xl:grid-cols-[0.8fr_1.2fr] gap-8 relative z-10 items-start">
+
+        <!-- Left Panel: Controls & Status -->
+        <div class="flex flex-col justify-start space-y-6">
+            <!-- Header Group -->
+            <div class="space-y-2">
+                <div class="section-title">系统状态</div>
+                <h1 class="hero-title leading-tight text-4xl md:text-5xl lg:text-6xl flex gap-3 items-baseline">
+                    <span class="text-white">智能</span>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">视觉中枢</span>
+                    <span class="text-accent text-3xl">.</span>
+                </h1>
+                <p class="text-sm opacity-90 max-w-md leading-relaxed">
+                    基于 YOLOv8 的实时目标检测系统，集成自动风险评估与空间音频反馈。
+                </p>
+            </div>
+
+            <!-- Dynamic Alert Banner (Now Liquid Glass) -->
+            <div id="alert-banner" class="glass-panel p-6 border-l-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs uppercase tracking-widest opacity-80" id="alert-header">安全状态</span>
+                    <span class="text-xs font-mono opacity-80" id="alert-time">--:--</span>
+                </div>
+                <h3 class="text-xl font-syne font-bold text-white mb-1" id="alert-title">未检测到威胁</h3>
+                <p class="text-xs opacity-70" id="alert-desc">运行正常，前方无障碍物。</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="glass-panel p-6 flex-1 min-h-0 flex flex-col">
+                <div class="section-title">控制台</div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="toggle-btn" class="btn-glass">暂停检测</button>
+                    <button id="refresh-btn" class="btn-glass">重新加载</button>
+                    <button id="pixel-btn" class="btn-glass">锐化模式</button>
+                    <button id="fit-btn" class="btn-glass">适应屏幕</button>
+                    <button id="rotate-btn" class="btn-glass">旋转画面</button>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-[rgba(255,255,255,0.1)]">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] uppercase tracking-wider opacity-80">服务地址</span>
+                        <input id="base-url" type="text" value="http://127.0.0.1:5000"
+                            class="bg-black/30 border border-white/10 rounded px-3 py-1 text-xs text-white/80 focus:outline-none focus:border-accent w-48 font-mono">
+                        <button id="apply-url"
+                            class="text-[10px] uppercase hover:text-accent transition-colors">应用</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Assistant Panel (Ensured visible) -->
+            <div class="glass-panel p-6" id="voice-panel">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="section-title mb-0">语音交互</div>
+                    <div id="voice-status-badge"
+                        class="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-white/10 text-white/50 transition-colors duration-300">
+                        IDLE
+                    </div>
+                </div>
+
+                <!-- Chat Log -->
+                <div id="voice-log-container" class="h-32 overflow-y-auto space-y-3 pr-2 font-mono text-xs">
+                    <div class="text-[10px] text-white/30 italic text-center py-8">
+                        等待语音指令...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connection Status Stripes -->
+            <div class="flex gap-4 font-mono">
+                <div class="status-chip"><span class="status-indicator active"></span> 在线</div>
+                <div class="status-chip"><span class="status-indicator active" id="dot-infer"></span> 推理</div>
+                <div class="status-chip"><span class="status-indicator" id="dot-audio"></span> 音频</div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Video & Metrics -->
+        <div class="flex flex-col gap-6 justify-center">
+
+            <!-- Video HUD -->
+            <div class="video-hud-container aspect-video relative group">
+                <img id="video-stream" class="video-frame" alt="Live Feed">
+
+                <div class="hud-overlay">
+                    <div class="scan-line"></div>
+                    <div class="hud-corner tl"></div>
+                    <div class="hud-corner tr"></div>
+                    <div class="hud-corner bl"></div>
+                    <div class="hud-corner br"></div>
+
+                    <!-- Center Crosshair -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                        <div class="w-12 h-[1px] bg-accent"></div>
+                        <div class="h-12 w-[1px] bg-accent absolute"></div>
+                    </div>
+
+                    <!-- Live Tag -->
+                    <div
+                        class="absolute top-6 right-6 flex items-center gap-2 bg-red-500/20 px-3 py-1 rounded text-[10px] text-red-400 font-bold tracking-widest border border-red-500/30">
+                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> 直播
+                    </div>
+
+                    <!-- Overlay Data -->
+                    <div class="absolute bottom-6 left-6 font-mono text-xs text-accent opacity-80">
+                        <div id="target-meta">扫描中...</div>
+                        <div class="opacity-80 mt-1">分辨率: <span id="shape-val">检测中...</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="metric-card">
+                    <span class="metric-label">帧率</span>
+                    <span class="metric-value" id="fps-val">--</span>
+                    <span class="text-[10px] opacity-70">FPS</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">延迟</span>
+                    <span class="metric-value" id="delay-val">--</span>
+                    <span class="text-[10px] opacity-70">毫秒</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">推理耗时</span>
+                    <span class="metric-value" id="infer-val">--</span>
+                    <span class="text-[10px] opacity-70">毫秒/帧</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">目标数</span>
+                    <span class="metric-value text-accent" id="count-val">--</span>
+                    <span class="text-[10px] opacity-70">已检测</span>
+                </div>
+            </div>
+
+            <!-- Logs Panel (Moved here to fill space and fix overlap) -->
+            <div class="glass-panel p-6 flex-1">
+                <div class="section-title">系统日志</div>
+                <div class="grid grid-cols-2 gap-y-3 gap-x-8 font-mono text-[11px] opacity-90 tracking-tight">
+                    <div class="flex justify-between border-b border-white/5 pb-1 items-center">
+                        <span class="opacity-70">核心初始化</span>
+                        <span class="text-accent font-bold tracking-wider">OK</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1 items-center">
+                        <span class="opacity-70">相机数据链</span>
+                        <span class="text-accent font-bold tracking-wider">ACTIVE</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1 items-center">
+                        <span class="opacity-70">音频输出流</span>
+                        <span class="text-accent font-bold tracking-wider">READY</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1 items-center">
+                        <span class="opacity-70">网络延迟</span>
+                        <span class="font-bold">4ms</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1 items-center">
+                        <span class="opacity-70">后端服务</span>
+                        <span class="text-green-400 font-bold tracking-wider">ONLINE</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1 items-center">
+                        <span class="opacity-70">渲染引擎</span>
+                        <span class="font-bold">GPU</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+        class="fixed bottom-0 w-full px-8 py-4 flex justify-between items-center text-[10px] uppercase tracking-widest opacity-80 z-50">
+        <div>系统 v2.4.0 // 构建于 2026.01.20</div>
+        <div id="last-update">同步中...</div>
+    </footer>
+
+    <script src="/static/app.js?v=3"></script>
+    <script>
+        // Simple GSAP Intro
+        gsap.from(".hero-title span", {
+            y: 100, opacity: 0, duration: 1, stagger: 0.1, ease: "power4.out", delay: 0.2
+        });
+        // Removed glass-panel animation to prevent visibility issues
+        // gsap.from(".glass-panel", {
+        //    y: 20, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power2.out", delay: 0.6
+        // });
+    </script>
+</body>
+
+</html>
